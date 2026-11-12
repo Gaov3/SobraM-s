@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SobraMês - Gestão Financeira Visual</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --bg: #f1f5f9;
+      --sidebar-bg: #ffffff;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --sidebar-width: 280px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Barra Lateral Esquerda */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .brand-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: block;
+      margin-top: -2px;
+    }
+
+    .btn-close-sidebar {
+      display: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      padding: 4px 8px;
+    }
+
+    .btn-close-sidebar:hover {
+      background: #f1f5f9;
+      color: var(--text);
+    }
+
+    .btn-new-control {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background-color: var(--primary);
+      color: #fff;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    /* Formulário rápido de novo controle na sidebar */
+    .new-control-box {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .new-control-box input {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+
+    .new-control-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .new-control-actions button {
+      flex: 1;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+    }
+
+    .sidebar-section-label {
+      padding: 14px 18px 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+    }
+
+    .controls-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      gap: 8px;
+    }
+
+    .control-item:hover {
+      background-color: #f8fafc;
+      border-color: var(--border);
+    }
+
+    .control-item.active {
+      background-color: var(--primary-light);
+      border-color: #bfdbfe;
+      border-left: 4px solid var(--primary);
+    }
+
+    .control-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .control-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .control-item.active .control-name {
+      color: var(--primary);
+    }
+
+    .control-meta {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .control-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0.65;
+    }
+
+    .control-item:hover .control-actions,
+    .control-item.active .control-actions {
+      opacity: 1;
+    }
+
+    .icon-btn {
+      background: transparent;
+      color: var(--text-muted);
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      line-height: 1;
+    }
+
+    .icon-btn:hover {
+      background-color: #e2e8f0;
+      color: var(--text);
+    }
+
+    .icon-btn.delete:hover {
+      background-color: #fee2e2;
+      color: var(--danger);
+    }
+
+    .sidebar-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Overlay mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 90;
+    }
+
+    /* Área Principal */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      padding: 24px 24px 40px;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    header.top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 22px;
+      background: var(--card-bg);
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-menu-mobile {
+      display: none;
+      background-color: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+    }
+
+    .active-badge {
+      display: inline-block;
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 2px;
+    }
+
+    header.top-header h1 {
+      font-size: 1.5rem;
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing: -0.4px;
+    }
+
+    header.top-header p {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    /* Alerta de déficit (RF05) */
+    .alert {
+      background-color: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-left: 5px solid var(--danger);
+      color: #991b1b;
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.1);
+    }
+
+    /* Cards de Resumo */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .card h3 {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      font-weight: 700;
+    }
+
+    .card .value {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    .salary-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    input, button {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.25);
+      border-color: var(--primary);
+    }
+
+    input[type="number"], input[type="text"] {
+      width: 100%;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.15s ease;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button.btn-danger {
+      background-color: var(--danger);
+    }
+
+    button.btn-danger:hover {
+      background-color: var(--danger-hover);
+    }
+
+    button.btn-secondary {
+      background-color: #64748b;
+    }
+
+    button.btn-secondary:hover {
+      background-color: #475569;
+    }
+
+    /* Layout Principal */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 20px rgba(15, 23, 42, 0.15);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay.open {
+        display: block;
+      }
+
+      .btn-close-sidebar,
+      .btn-menu-mobile {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .main-content {
+        padding: 16px;
+      }
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 120px;
+      gap: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .color-picker {
+      height: 42px;
+      width: 100%;
+      padding: 3px;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    /* Tabela de Gastos */
+    .table-container {
+      margin-top: 22px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 11px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+    }
+
+    .color-dot {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      margin-right: 7px;
+      vertical-align: middle;
+    }
+
+    .pct-badge {
+      display: inline-block;
+      background-color: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .actions button {
+      padding: 5px 9px;
+      font-size: 0.78rem;
+    }
+
+    .empty-table {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 20px 10px;
+      font-size: 0.9rem;
+    }
+
+    .chart-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 430px;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      flex: 1;
+      min-height: 350px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chart-empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 24px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Overlay para celular -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
+  <!-- Aba Lateral Esquerda: Meus Controles de Gastos -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div>
+          <span class="brand-title">SobraMês</span>
+          <span class="brand-sub">Controle Financeiro</span>
+        </div>
+        <button type="button" class="btn-close-sidebar" onclick="toggleSidebar(false)" title="Fechar menu">✕</button>
+      </div>
+
+      <button type="button" class="btn-new-control" onclick="abrirFormNovoControle()">
+        <span>+</span> Novo Controle
+      </button>
+
+      <div id="new-control-box" class="new-control-box">
+        <input type="text" id="input-novo-controle" placeholder="Ex: Dezembro 2026, Viagem..." onkeydown="if(event.key==='Enter') criarNovoControle()" />
+        <div class="new-control-actions">
+          <button type="button" onclick="criarNovoControle()">Criar</button>
+          <button type="button" class="btn-secondary" onclick="fecharFormNovoControle()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section-label">Meus Controles Salvos</div>
+    <div id="controls-list" class="controls-list">
+      <!-- Lista preenchida via JS -->
+    </div>
+
+    <div class="sidebar-footer">
+      Salvo automaticamente no navegador
+    </div>
+  </aside>
+
+  <!-- Conteúdo Principal -->
+  <main class="main-content">
+    <div class="container">
+      <header class="top-header">
+        <div class="header-left">
+          <button type="button" class="btn-menu-mobile" onclick="toggleSidebar(true)">☰ Controles</button>
+          <div>
+            <span class="active-badge">Controle Ativo</span>
+            <h1 id="active-control-title">Controle Principal</h1>
+            <p>Informe seu salário e acompanhe quanto cada gasto consome do todo</p>
+          </div>
+        </div>
+      </header>
+
+      <!-- Alerta de Orçamento Estourado (RF05) -->
+      <div id="alert-deficit" class="alert">
+        Atenção! Seus gastos ultrapassaram o seu salário mensal neste controle!
+      </div>
+
+      <!-- Cards de Resumo (RF01, RF05) -->
+      <div class="summary-grid">
+        <div class="card">
+          <h3>Salário Mensal</h3>
+          <div class="salary-input-group">
+            <input type="number" id="input-salario" placeholder="Ex: 3500,00" step="0.01" min="0" />
+            <button type="button" onclick="salvarSalario()">Salvar</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Total de Gastos</h3>
+          <div class="value" id="disp-total-gastos">R$ 0,00</div>
+          <small id="disp-qtd-gastos" style="color: var(--text-muted);">0 gastos • 0,0% do salário</small>
+        </div>
+        <div class="card">
+          <h3>Saldo Livre</h3>
+          <div class="value" id="disp-saldo-livre" style="color: var(--success);">R$ 0,00</div>
+          <small id="disp-percentual-livre" style="color: var(--text-muted);">0,0% do salário livre</small>
+        </div>
+      </div>
+
+      <!-- Layout Principal -->
+      <div class="main-grid">
+        <!-- Formulário e Listagem de Gastos (RF02, RF04) -->
+        <div class="card">
+          <h3 id="form-title" style="margin-bottom: 14px;">Cadastrar Novo Gasto</h3>
+          <form id="form-gasto" onsubmit="manipularSubmitGasto(event)">
+            <input type="hidden" id="gasto-id" />
+            <div class="form-group">
+              <label for="gasto-nome">Nome do Gasto</label>
+              <input type="text" id="gasto-nome" placeholder="Ex: Aluguel, Mercado, Transporte" required />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="gasto-valor">Valor (R$)</label>
+                <input type="number" id="gasto-valor" placeholder="0,00" step="0.01" min="0.01" required />
+              </div>
+              <div class="form-group">
+                <label for="gasto-cor">Cor no Gráfico</label>
+                <input type="color" id="gasto-cor" class="color-picker" value="#3b82f6" />
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="submit" id="btn-salvar-gasto" style="flex: 1;">Adicionar Gasto</button>
+              <button type="button" id="btn-cancelar" class="btn-secondary" onclick="resetarFormulario()" style="display:none;">Cancelar</button>
+            </div>
+          </form>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Gasto</th>
+                  <th>Valor</th>
+                  <th id="th-percentual">% Salário</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-gastos-body">
+                <tr>
+                  <td colspan="4" class="empty-table">Nenhum gasto cadastrado ainda.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Visualização do Gráfico de Pizza Dinâmico (RF03, RNF02) -->
+        <div class="card chart-card">
+          <h3>Distribuição do Salário</h3>
+          <div class="chart-wrapper">
+            <div id="chart-empty-msg" class="chart-empty">
+              Informe seu salário mensal ou adicione um gasto para visualizar o gráfico de distribuição.
+            </div>
+            <canvas id="graficoPizza" style="display: none;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'sobrames_multi_v1';
+    const LEGACY_KEY = 'sobrames_data';
+
+    let appState = {
+      activeId: null,
+      controles: []
+    };
+
+    let chartInstance = null;
+    const coresSugeridas = ['#3b82f6', '#f97316', '#8b5cf6', '#ef4444', '#eab308', '#06b6d4'];
+
+    function formatarMoeda(valor) {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatarPct(valor, base) {
+      if (!base || base <= 0) return '0,0%';
+      return ((valor / base) * 100).toFixed(1).replace('.', ',') + '%';
+    }
+
+    function getControleAtivo() {
+      return appState.controles.find(c => c.id === appState.activeId) || appState.controles[0];
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarDados();
+      inicializarGrafico();
+      atualizarInterface();
+    });
+
+    // Persistência local com suporte a múltiplos controles (RF06, RNF03)
+    function carregarDados() {
+      const savedMulti = localStorage.getItem(STORAGE_KEY);
+      if (savedMulti) {
+        try {
+          const parsed = JSON.parse(savedMulti);
+          if (parsed && Array.isArray(parsed.controles) && parsed.controles.length > 0) {
+            appState = parsed;
+            if (!appState.controles.some(c => c.id === appState.activeId)) {
+              appState.activeId = appState.controles[0].id;
+            }
+            return;
+          }
+        } catch (e) {
+          console.error('Erro ao ler dados salvos:', e);
+        }
+      }
+
+      let salarioInicial = 0;
+      let gastosIniciais = [];
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) {
+        try {
+          const parsedLegacy = JSON.parse(legacy);
+          salarioInicial = Number(parsedLegacy.salario) || 0;
+          gastosIniciais = Array.isArray(parsedLegacy.gastos) ? parsedLegacy.gastos : [];
+        } catch (e) {}
+      }
+
+      const defaultId = 'ctrl_' + Date.now();
+      appState = {
+        activeId: defaultId,
+        controles: [
+          {
+            id: defaultId,
+            titulo: 'Controle Principal',
+            salario: salarioInicial,
+            gastos: gastosIniciais
+          }
+        ]
+      };
+      salvarDados();
+    }
+
+    function salvarDados() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    }
+
+    // Gerenciamento da Barra Lateral (Controles de Gastos)
+    function toggleSidebar(abrir) {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      if (abrir) {
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+      } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+      }
+    }
+
+    function abrirFormNovoControle() {
+      const box = document.getElementById('new-control-box');
+      const input = document.getElementById('input-novo-controle');
+      box.style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+
+    function fecharFormNovoControle() {
+      document.getElementById('new-control-box').style.display = 'none';
+      document.getElementById('input-novo-controle').value = '';
+    }
+
+    function criarNovoControle() {
+      const input = document.getElementById('input-novo-controle');
+      const nomeDigitado = input.value.trim();
+      const titulo = nomeDigitado || `Controle #${appState.controles.length + 1}`;
+
+      const novoId = 'ctrl_' + Date.now();
+      appState.controles.unshift({
+        id: novoId,
+        titulo: titulo,
+        salario: 0,
+        gastos: []
+      });
+      appState.activeId = novoId;
+
+      salvarDados();
+      fecharFormNovoControle();
+      resetarFormulario();
+      atualizarInterface();
+      toggleSidebar(false);
+    }
+
+    function selecionarControle(id) {
+      if (appState.activeId === id) {
+        toggleSidebar(false);
+        return;
+      }
+      appState.activeId = id;
+      salvarDados();
+      resetarFormulario();
+      atualizarInterface();
+      toggleSidebar(false);
+    }
+
+    function renomearControle(event, id) {
+      event.stopPropagation();
+      const controle = appState.controles.find(c => c.id === id);
+      if (!controle) return;
+
+      const novoNome = prompt('Novo nome para este controle de gastos:', controle.titulo);
+      if (novoNome && novoNome.trim()) {
+        controle.titulo = novoNome.trim();
+        salvarDados();
+        atualizarInterface();
+      }
+    }
+
+    function excluirControle(event, id) {
+      event.stopPropagation();
+      if (appState.controles.length <= 1) {
+        alert('Você precisa manter pelo menos um controle de gastos ativo.');
+        return;
+      }
+
+      const controle = appState.controles.find(c => c.id === id);
+      if (!confirm(`Deseja realmente excluir "${controle.titulo}"?`)) return;
+
+      appState.controles = appState.controles.filter(c => c.id !== id);
+      if (appState.activeId === id) {
+        appState.activeId = appState.controles[0].id;
+      }
+
+      salvarDados();
+      resetarFormulario();
+      atualizarInterface();
+    }
+
+    function renderizarSidebar() {
+      const listEl = document.getElementById('controls-list');
+      listEl.innerHTML = '';
+
+      appState.controles.forEach(ctrl => {
+        const totalGastos = ctrl.gastos.reduce((acc, g) => acc + g.valor, 0);
+        const saldo = ctrl.salario - totalGastos;
+        const isAtivo = ctrl.id === appState.activeId;
+
+        const item = document.createElement('div');
+        item.className = 'control-item' + (isAtivo ? ' active' : '');
+        item.onclick = () => selecionarControle(ctrl.id);
+
+        item.innerHTML = `
+          <div class="control-info">
+            <div class="control-name" title="${ctrl.titulo}">${ctrl.titulo}</div>
+            <div class="control-meta">Saldo: ${formatarMoeda(saldo)}</div>
+          </div>
+          <div class="control-actions">
+            <button type="button" class="icon-btn" title="Renomear" onclick="renomearControle(event, '${ctrl.id}')">✏️</button>
+            <button type="button" class="icon-btn delete" title="Excluir controle" onclick="excluirControle(event, '${ctrl.id}')">🗑️</button>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    // Salário Mensal (RF01)
+    function salvarSalario() {
+      const controle = getControleAtivo();
+      const inputVal = parseFloat(document.getElementById('input-salario').value);
+      controle.salario = isNaN(inputVal) || inputVal < 0 ? 0 : inputVal;
+      salvarDados();
+      atualizarInterface();
+    }
+
+    // Cadastro e Edição de Gastos (RF02, RF04)
+    function manipularSubmitGasto(e) {
+      e.preventDefault();
+      const controle = getControleAtivo();
+      const id = document.getElementById('gasto-id').value;
+      const nome = document.getElementById('gasto-nome').value.trim();
+      const valor = parseFloat(document.getElementById('gasto-valor').value);
+      const cor = document.getElementById('gasto-cor').value;
+
+      if (!nome || isNaN(valor) || valor <= 0) return;
+
+      if (id) {
+        const index = controle.gastos.findIndex(g => g.id === id);
+        if (index !== -1) {
+          controle.gastos[index] = { id, nome, valor, cor };
+        }
+      } else {
+        controle.gastos.push({
+          id: Date.now().toString(),
+          nome,
+          valor,
+          cor
+        });
+      }
+
+      salvarDados();
+      resetarFormulario();
+      atualizarInterface();
+    }
+
+    function prepararEdicao(id) {
+      const controle = getControleAtivo();
+      const gasto = controle.gastos.find(g => g.id === id);
+      if (!gasto) return;
+
+      document.getElementById('gasto-id').value = gasto.id;
+      document.getElementById('gasto-nome').value = gasto.nome;
+      document.getElementById('gasto-valor').value = gasto.valor;
+      document.getElementById('gasto-cor').value = gasto.cor;
+
+      document.getElementById('form-title').innerText = 'Editar Gasto';
+      document.getElementById('btn-salvar-gasto').innerText = 'Atualizar Gasto';
+      document.getElementById('btn-cancelar').style.display = 'inline-block';
+    }
+
+    function excluirGasto(id) {
+      const controle = getControleAtivo();
+      controle.gastos = controle.gastos.filter(g => g.id !== id);
+      salvarDados();
+      atualizarInterface();
+    }
+
+    function resetarFormulario() {
+      const controle = getControleAtivo();
+      document.getElementById('gasto-id').value = '';
+      document.getElementById('gasto-nome').value = '';
+      document.getElementById('gasto-valor').value = '';
+      const qtd = controle ? controle.gastos.length : 0;
+      document.getElementById('gasto-cor').value = coresSugeridas[qtd % coresSugeridas.length];
+      document.getElementById('form-title').innerText = 'Cadastrar Novo Gasto';
+      document.getElementById('btn-salvar-gasto').innerText = 'Adicionar Gasto';
+      document.getElementById('btn-cancelar').style.display = 'none';
+    }
+
+    // Atualização em tempo real (RF03, RF05, RNF02)
+    function atualizarInterface() {
+      const controle = getControleAtivo();
+      renderizarSidebar();
+
+      document.getElementById('active-control-title').innerText = controle.titulo;
+      document.getElementById('input-salario').value = controle.salario > 0 ? controle.salario : '';
+
+      const totalGastos = controle.gastos.reduce((acc, g) => acc + g.valor, 0);
+      const saldoLivre = controle.salario - totalGastos;
+
+      const pctConsumido = controle.salario > 0 ? formatarPct(totalGastos, controle.salario) : '0,0%';
+      const pctLivre = controle.salario > 0 ? formatarPct(saldoLivre, controle.salario) : '0,0%';
+
+      document.getElementById('disp-total-gastos').innerText = formatarMoeda(totalGastos);
+      const labelQtd = controle.gastos.length === 1 ? '1 gasto' : `${controle.gastos.length} gastos`;
+      document.getElementById('disp-qtd-gastos').innerText = `${labelQtd} • ${pctConsumido} do salário`;
+
+      const elSaldo = document.getElementById('disp-saldo-livre');
+      elSaldo.innerText = formatarMoeda(saldoLivre);
+      elSaldo.style.color = saldoLivre < 0 ? 'var(--danger)' : 'var(--success)';
+
+      document.getElementById('disp-percentual-livre').innerText = `${pctLivre} do salário livre`;
+
+      const alertElem = document.getElementById('alert-deficit');
+      alertElem.style.display = saldoLivre < 0 ? 'block' : 'none';
+
+      // Cabeçalho da coluna de porcentagem se adapta se há salário definido ou não
+      const basePercentual = controle.salario > 0 ? controle.salario : totalGastos;
+      document.getElementById('th-percentual').innerText = controle.salario > 0 ? '% Salário' : '% Total';
+
+      const tbody = document.getElementById('tabela-gastos-body');
+      tbody.innerHTML = '';
+
+      if (controle.gastos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-table">Nenhum gasto cadastrado neste controle.</td></tr>';
+      } else {
+        controle.gastos.forEach(g => {
+          const pctItem = formatarPct(g.valor, basePercentual);
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><span class="color-dot" style="background-color: ${g.cor};"></span>${g.nome}</td>
+            <td>${formatarMoeda(g.valor)}</td>
+            <td><span class="pct-badge">${pctItem}</span></td>
+            <td class="actions">
+              <button type="button" class="btn-secondary" onclick="prepararEdicao('${g.id}')">Editar</button>
+              <button type="button" class="btn-danger" onclick="excluirGasto('${g.id}')">Excluir</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      atualizarGrafico(controle, saldoLivre, basePercentual);
+    }
+
+    function inicializarGrafico() {
+      const ctx = document.getElementById('graficoPizza').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            backgroundColor: [],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 14,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw || 0;
+                  return ` ${context.label}: ${formatarMoeda(val)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function atualizarGrafico(controle, saldoLivre, basePercentual) {
+      if (!chartInstance) return;
+
+      const canvas = document.getElementById('graficoPizza');
+      const emptyMsg = document.getElementById('chart-empty-msg');
+
+      if (controle.salario <= 0 && controle.gastos.length === 0) {
+        canvas.style.display = 'none';
+        emptyMsg.style.display = 'block';
+        return;
+      }
+
+      canvas.style.display = 'block';
+      emptyMsg.style.display = 'none';
+
+      const labels = controle.gastos.map(g => `${g.nome} (${formatarPct(g.valor, basePercentual)})`);
+      const data = controle.gastos.map(g => g.valor);
+      const colors = controle.gastos.map(g => g.cor);
+
+      if (saldoLivre > 0) {
+        labels.push(`Saldo Livre (${formatarPct(saldoLivre, basePercentual)})`);
+        data.push(saldoLivre);
+        colors.push('#10b981');
+      }
+
+      chartInstance.data.labels = labels;
+      chartInstance.data.datasets[0].data = data;
+      chartInstance.data.datasets[0].backgroundColor = colors;
+      chartInstance.update();
+    }
+  </script>
+</body>
+</html>
